@@ -1,0 +1,23 @@
+{
+  "environment": "QA",
+  "environments": {
+    "QA": {
+      "baseUrl": "https://www.pnc.com/en/corporate-and-institutional.html",
+      "apiBaseUrl": "https://cib-qa-api.examplebank.com/v1",
+      "dbUrl": "jdbc:mysql://cib-qa-db.examplebank.com:3306/cib_banking",
+      "dbUser": "cib_qa_user",
+      "dbPassword": "REPLACE_ME_OR_USE_ENV_VAR"
+    },
+    "UAT": {
+      "baseUrl": "https://cib-uat.examplebank.com",
+      "apiBaseUrl": "https://cib-uat-api.examplebank.com/v1",
+      "dbUrl": "jdbc:mysql://cib-uat-db.examplebank.com:3306/cib_banking",
+      "dbUser": "cib_uat_user",
+      "dbPassword": "REPLACE_ME_OR_USE_ENV_VAR"
+    }
+  },
+  "browser": "chromium",
+  "headless": true,
+  "defaultTimeoutMs": 30000,
+  "screenshotOnFailure": true
+}

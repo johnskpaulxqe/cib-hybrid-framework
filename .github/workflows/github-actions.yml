@@ -1,0 +1,214 @@
+---
+# FILE: github-actions.yml
+name: CIB Hybrid Framework CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 1 * * *'   # 01:00 UTC daily
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Runner to execute'
+        default: 'SmokeTestRunner'
+      environment:
+        description: 'Target environment (QA / UAT)'
+        default: 'QA'
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+
+  # ---------- Job 1: Build ----------
+  build:
+    name: Build - Compile and Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Compile project
+        env:
+          MAVEN_OPTS: "-Xmx1024m -Dfile.encoding=UTF-8"
+        run: mvn test-compile -DskipTests
+
+  # ---------- Job 2: Smoke Tests (UI, Playwright) ----------
+  smoke:
+    name: Smoke Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      # Playwright ships its own browser binaries — no apt-get Chrome install needed,
+      # unlike the Selenium/WebDriverManager version of this pipeline.
+      - name: Install Playwright browsers
+        run: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps chromium"
+
+      - name: Run Smoke Tests
+        env:
+          MAVEN_OPTS: "-Xmx1024m -Dfile.encoding=UTF-8"
+        run: |
+          mvn test \
+            -Dtest=SmokeTestRunner \
+            -Dbrowser=chromium \
+            -Dheadless=true \
+            -Denv=QA \
+            -DDB_URL=${{ secrets.DB_URL }} \
+            -DDB_USER=${{ secrets.DB_USER }} \
+            -DDB_PASS=${{ secrets.DB_PASS }}
+
+      - name: Publish Cucumber Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-cucumber-report
+          path: target/cucumber-reports/smoke/
+          retention-days: 7
+
+      - name: Publish Extent Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-extent-report
+          path: target/extent-reports/
+          retention-days: 7
+
+      - name: Publish Failure Screenshots
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-failure-screenshots
+          path: target/screenshots/
+          retention-days: 7
+
+  # ---------- Job 3: API Tests ----------
+  api:
+    name: API Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Run API Tests
+        env:
+          MAVEN_OPTS: "-Xmx1024m -Dfile.encoding=UTF-8"
+        run: |
+          mvn test \
+            -Dtest=ApiTestRunner \
+            -Denv=QA \
+            -DDB_URL=${{ secrets.DB_URL }} \
+            -DDB_USER=${{ secrets.DB_USER }} \
+            -DDB_PASS=${{ secrets.DB_PASS }}
+
+      - name: Publish API Cucumber Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: api-cucumber-report
+          path: target/cucumber-reports/api/
+          retention-days: 7
+
+  # ---------- Job 4: Regression (nightly / manual only) ----------
+  regression:
+    name: Regression Tests
+    needs: [smoke, api]
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Install Playwright browsers
+        run: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps chromium"
+
+      - name: Run Regression Tests
+        env:
+          MAVEN_OPTS: "-Xmx1024m -Dfile.encoding=UTF-8"
+        run: |
+          mvn test \
+            -Dtest=RegressionTestRunner \
+            -Dbrowser=chromium \
+            -Dheadless=true \
+            -Denv=QA \
+            -DDB_URL=${{ secrets.DB_URL }} \
+            -DDB_USER=${{ secrets.DB_USER }} \
+            -DDB_PASS=${{ secrets.DB_PASS }}
+
+      - name: Publish Regression Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-cucumber-report
+          path: target/cucumber-reports/regression/
+          retention-days: 14
+
+  # ---------- Job 5: DB Tests (nightly / manual only) ----------
+  db:
+    name: Database Tests
+    needs: build
+    if: >-
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Run DB Tests
+        env:
+          MAVEN_OPTS: "-Xmx1024m -Dfile.encoding=UTF-8"
+        run: |
+          mvn test \
+            -Dtest=DbTestRunner \
+            -Denv=QA \
+            -DDB_URL=${{ secrets.DB_URL }} \
+            -DDB_USER=${{ secrets.DB_USER }} \
+            -DDB_PASS=${{ secrets.DB_PASS }}
+
+      - name: Publish DB Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: db-cucumber-report
+          path: target/cucumber-reports/db/
+          retention-days: 7

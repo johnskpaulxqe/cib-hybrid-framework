@@ -1,0 +1,22 @@
+<extentreports>
+    <configuration>
+        <!-- theme: DARK or STANDARD -->
+        <theme>DARK</theme>
+        <documentTitle>CIB Automation Test Report</documentTitle>
+        <reportName>Corporate and Institutional Banking - Test Results</reportName>
+        <encoding>UTF-8</encoding>
+        <protocol>https</protocol>
+        <timeStampFormat>yyyy-MM-dd HH:mm:ss</timeStampFormat>
+        <enableTimeline>true</enableTimeline>
+        <offlineMode>false</offlineMode>
+
+        <!-- Uncomment and set your brand colours -->
+        <!--
+        <css>
+          .report-name { color: #YOUR_BRAND_COLOUR; }
+          .pass .label { background-color: #YOUR_GREEN; }
+          .fail .label { background-color: #YOUR_RED; }
+        </css>
+        -->
+    </configuration>
+</extentreports>

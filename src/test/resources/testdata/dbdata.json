@@ -1,0 +1,25 @@
+{
+  "tables": {
+    "payments": "cib_payments",
+    "accounts": "cib_accounts",
+    "tradeFinanceDeals": "cib_trade_finance_deals",
+    "fxDeals": "cib_fx_deals",
+    "users": "cib_users"
+  },
+  "queries": {
+    "findPaymentById": "SELECT * FROM cib_payments WHERE payment_id = ?",
+    "findAccountByEntityId": "SELECT * FROM cib_accounts WHERE entity_id = ?",
+    "findFxDealByReference": "SELECT * FROM cib_fx_deals WHERE deal_reference = ?",
+    "countPendingPayments": "SELECT COUNT(*) FROM cib_payments WHERE status = 'PENDING' AND entity_id = ?"
+  },
+  "expectedValues": {
+    "payments": {
+      "defaultStatus": "SUBMITTED"
+    },
+    "accounts": {
+      "corporateAdmin": {
+        "entityId": "ENT-100001"
+      }
+    }
+  }
+}

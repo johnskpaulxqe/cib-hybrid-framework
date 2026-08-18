@@ -1,0 +1,26 @@
+{
+  "corporateAdmin": {
+    "username": "corp.admin@examplebank.com",
+    "password": "$CORP_ADMIN_PASSWORD",
+    "email": "corp.admin@examplebank.com",
+    "entityId": "ENT-100001"
+  },
+  "paymentApprover": {
+    "username": "payment.approver@examplebank.com",
+    "password": "$PAYMENT_APPROVER_PASSWORD",
+    "email": "payment.approver@examplebank.com",
+    "entityId": "ENT-100002"
+  },
+  "tradeFinanceOfficer": {
+    "username": "trade.officer@examplebank.com",
+    "password": "$TRADE_OFFICER_PASSWORD",
+    "email": "trade.officer@examplebank.com",
+    "entityId": "ENT-100003"
+  },
+  "viewOnlyUser": {
+    "username": "view.only@examplebank.com",
+    "password": "$VIEW_ONLY_PASSWORD",
+    "email": "view.only@examplebank.com",
+    "entityId": "ENT-100004"
+  }
+}

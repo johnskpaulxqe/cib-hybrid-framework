@@ -1,0 +1,37 @@
+{
+  "endpoints": {
+    "login": "/auth/login",
+    "accountSummary": "/accounts/summary",
+    "paymentInitiation": "/payments/initiate",
+    "paymentStatus": "/payments/{paymentId}/status",
+    "tradeFinanceDeals": "/trade-finance/deals",
+    "fxDeals": "/fx/deals",
+    "cashManagementBalances": "/cash-management/balances"
+  },
+  "requestBodies": {
+    "login": {
+      "username": "corp.admin@examplebank.com",
+      "password": "$CORP_ADMIN_PASSWORD"
+    },
+    "initiateWireTransfer": {
+      "fromAccountId": "ACC-500100",
+      "toAccountId": "ACC-500200",
+      "amount": 10000.00,
+      "currency": "USD",
+      "reference": "INV-2026-0001"
+    },
+    "createFxDeal": {
+      "buyCurrency": "USD",
+      "sellCurrency": "EUR",
+      "amount": 500000.00,
+      "dealType": "SPOT"
+    }
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+  },
+  "pagination": {
+    "defaultLimit": 20
+  }
+}

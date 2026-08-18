@@ -1,0 +1,30 @@
+# Build output
+target/
+
+# IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs (kept locally, not in git)
+*.log
+
+# Playwright
+node_modules/
+
+# Never commit real secrets — config.json should only ever contain
+# $ENV_VAR placeholders, never actual passwords or connection strings
+.env

@@ -1,0 +1,143 @@
+trigger:
+  branches:
+    include: [main, develop]
+
+pr:
+  branches:
+    include: [main, develop]
+
+schedules:
+  - cron: "0 1 * * *"
+    displayName: Nightly full run
+    branches:
+      include: [main]
+    always: true
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  javaVersion: '17'
+
+stages:
+
+  # ---------- Stage 1: Build ----------
+  - stage: Build
+    jobs:
+      - job: Compile
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: $(javaVersion)
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - task: Cache@2
+            inputs:
+              key: 'maven | "$(Agent.OS)" | pom.xml'
+              path: $(HOME)/.m2/repository
+            displayName: Cache Maven packages
+
+          - script: mvn test-compile -DskipTests
+            displayName: 'Compile project'
+
+  # ---------- Stage 2: Smoke + API (every push/PR) ----------
+  - stage: SmokeAndApi
+    dependsOn: Build
+    jobs:
+      - job: Smoke
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: $(javaVersion)
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - script: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps chromium"
+            displayName: 'Install Playwright browsers'
+
+          - script: |
+              mvn test -Dtest=SmokeTestRunner -Dbrowser=chromium -Dheadless=true -Denv=QA \
+                -DDB_URL=$(DB_URL) -DDB_USER=$(DB_USER) -DDB_PASS=$(DB_PASS)
+            displayName: 'Run Smoke Tests'
+
+          - task: PublishPipelineArtifact@1
+            condition: always()
+            inputs:
+              targetPath: 'target/cucumber-reports/smoke'
+              artifactName: 'smoke-cucumber-report'
+
+          - task: PublishPipelineArtifact@1
+            condition: always()
+            inputs:
+              targetPath: 'target/extent-reports'
+              artifactName: 'smoke-extent-report'
+
+      - job: Api
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: $(javaVersion)
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - script: |
+              mvn test -Dtest=ApiTestRunner -Denv=QA \
+                -DDB_URL=$(DB_URL) -DDB_USER=$(DB_USER) -DDB_PASS=$(DB_PASS)
+            displayName: 'Run API Tests'
+
+          - task: PublishPipelineArtifact@1
+            condition: always()
+            inputs:
+              targetPath: 'target/cucumber-reports/api'
+              artifactName: 'api-cucumber-report'
+
+  # ---------- Stage 3: Regression + DB (nightly / manual only) ----------
+  - stage: NightlyFullRun
+    dependsOn: SmokeAndApi
+    condition: >-
+      or(
+        eq(variables['Build.Reason'], 'Schedule'),
+        eq(variables['Build.Reason'], 'Manual')
+      )
+    jobs:
+      - job: Regression
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: $(javaVersion)
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - script: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps chromium"
+            displayName: 'Install Playwright browsers'
+
+          - script: |
+              mvn test -Dtest=RegressionTestRunner -Dbrowser=chromium -Dheadless=true -Denv=QA \
+                -DDB_URL=$(DB_URL) -DDB_USER=$(DB_USER) -DDB_PASS=$(DB_PASS)
+            displayName: 'Run Regression Tests'
+
+          - task: PublishPipelineArtifact@1
+            condition: always()
+            inputs:
+              targetPath: 'target/cucumber-reports/regression'
+              artifactName: 'regression-cucumber-report'
+
+      - job: Database
+        steps:
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: $(javaVersion)
+              jdkArchitectureOption: x64
+              jdkSourceOption: PreInstalled
+
+          - script: |
+              mvn test -Dtest=DbTestRunner -Denv=QA \
+                -DDB_URL=$(DB_URL) -DDB_USER=$(DB_USER) -DDB_PASS=$(DB_PASS)
+            displayName: 'Run DB Tests'
+
+          - task: PublishPipelineArtifact@1
+            condition: always()
+            inputs:
+              targetPath: 'target/cucumber-reports/db'
+              artifactName: 'db-cucumber-report'
