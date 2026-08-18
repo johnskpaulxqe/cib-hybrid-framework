@@ -17,7 +17,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  javaVersion: '17'
+  javaVersion: '25'
 
 stages:
 

@@ -4,5 +4,6 @@
   "cucumberautocomplete.strictGherkinCompletion": true,
   "files.associations": {
     "*.feature": "cucumber"
-  }
+  },
+  "java.configuration.updateBuildConfiguration": "interactive"
 }
