@@ -6,7 +6,7 @@ import io.cucumber.testng.CucumberOptions;
 @CucumberOptions(
         features = "src/test/resources/features",
         glue = {"hooks", "stepdefinitions"},
-        tags = "not @wip",
+        // tags = "not @wip",
         plugin = {
                 "pretty",
                 "json:target/cucumber-reports/full/cucumber.json",
