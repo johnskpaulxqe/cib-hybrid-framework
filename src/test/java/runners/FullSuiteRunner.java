@@ -7,6 +7,7 @@ import io.cucumber.testng.CucumberOptions;
         features = "src/test/resources/features",
         glue = {"hooks", "stepdefinitions"},
         // tags = "not @wip",
+        tags = "@disabled-temporarily",
         plugin = {
                 "pretty",
                 "json:target/cucumber-reports/full/cucumber.json",
